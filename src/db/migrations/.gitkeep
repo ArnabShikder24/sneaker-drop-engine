@@ -1,0 +1,2 @@
+// Migration files live here. SQL/Sequelize migrations for drops, users,
+// reservations, purchases tables.
