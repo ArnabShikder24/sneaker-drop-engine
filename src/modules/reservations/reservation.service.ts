@@ -116,7 +116,7 @@ export async function reserveDrop(
     return { reservation, availableStock };
   }).then((result) => {
     // Emit AFTER transaction commits — never inside, to avoid notifying about rolled-back changes
-    emitStockUpdate(dropId, result.availableStock);
+    emitStockUpdate(dropId, result.availableStock, 'reserve');
     return result;
   });
 }
@@ -177,6 +177,14 @@ export async function completePurchase(
       { transaction: t },
     );
 
-    return purchase;
+    return { purchase, dropId: reservation.drop_id };
+  }).then(({ purchase, dropId }) => {
+    // Emit with reason='purchase' so ALL clients know to refresh their activity feed
+    // (stock doesn't change on purchase, but recent_purchasers does)
+    // We re-fetch current available_stock to include in the event
+    return Drop.findByPk(dropId, { attributes: ['available_stock'] }).then((drop) => {
+      emitStockUpdate(dropId, drop?.available_stock ?? 0, 'purchase');
+      return purchase;
+    });
   });
 }

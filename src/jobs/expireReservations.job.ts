@@ -91,7 +91,7 @@ async function expireStaleReservations(): Promise<void> {
       return { dropId: reservation.drop_id, availableStock };
     }).then((result) => {
       if (result) {
-        emitStockUpdate(result.dropId, result.availableStock);
+        emitStockUpdate(result.dropId, result.availableStock, 'expire');
         console.log(
           `[ExpireJob] Reservation ${reservation.id} expired. Drop ${result.dropId} stock restored to ${result.availableStock}.`,
         );

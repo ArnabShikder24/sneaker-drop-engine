@@ -1,7 +1,7 @@
 import { Server as HttpServer } from 'node:http';
 import { Server as SocketServer } from 'socket.io';
 import { env } from '../config/env';
-import { SOCKET_EVENTS } from './events';
+import { SOCKET_EVENTS, type StockUpdatedReason } from './events';
 
 let io: SocketServer;
 
@@ -40,19 +40,24 @@ export function initSocket(httpServer: HttpServer): SocketServer {
 }
 
 /**
- * Emits a STOCK_UPDATED event to all connected clients (or a specific drop room).
- * Called after every transaction that changes available_stock — reserve, expire, purchase.
+ * Emits a STOCK_UPDATED event to all connected clients.
+ * Called after every transaction that changes available_stock.
  * IMPORTANT: Always call AFTER the transaction commits, never before.
+ *
+ * @param reason - Why the stock changed. Frontend uses this to decide
+ *   whether to refresh the activity feed (only needed on 'purchase').
  */
-export function emitStockUpdate(dropId: number, availableStock: number): void {
+export function emitStockUpdate(
+  dropId: number,
+  availableStock: number,
+  reason: StockUpdatedReason = 'reserve',
+): void {
   if (!io) {
     console.warn('[Socket] emitStockUpdate called before io was initialized.');
     return;
   }
-  const payload = { dropId, availableStock };
-  // Broadcast to the specific drop room AND global — covers clients in both
+  const payload = { dropId, availableStock, reason };
   io.to(`drop:${dropId}`).emit(SOCKET_EVENTS.STOCK_UPDATED, payload);
-  // Also broadcast globally so any client not in a room still receives it
   io.emit(SOCKET_EVENTS.STOCK_UPDATED, payload);
 }
 

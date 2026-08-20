@@ -5,3 +5,6 @@ export const SOCKET_EVENTS = {
 } as const;
 
 export type SocketEventName = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
+
+/** Why the stock changed — lets the frontend decide whether to refresh the activity feed */
+export type StockUpdatedReason = 'reserve' | 'expire' | 'purchase';
