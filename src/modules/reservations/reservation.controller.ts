@@ -20,7 +20,7 @@ export async function createReservation(req: Request, res: Response): Promise<vo
  * Body: { user_id: number }
  */
 export async function purchase(req: Request, res: Response): Promise<void> {
-  const reservationId = parseInt(req.params.id, 10);
+  const reservationId = parseInt(String(req.params.id), 10);
   const { user_id } = req.body as { user_id: number };
   const purchaseRecord = await completePurchase(reservationId, user_id);
   res.status(201).json({

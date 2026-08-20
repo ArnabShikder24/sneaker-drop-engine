@@ -65,22 +65,26 @@ export async function reserveDrop(
      * Postgres guarantees that concurrent UPDATEs to the same row are serialized —
      * only ONE transaction can decrement when available_stock = 1.
      * All others will see 0 rows affected.
+     *
+     * We use QueryTypes.RAW to get the full [results, metadata] tuple,
+     * which gives us both the RETURNING data and the rowCount.
      */
-    const [updatedRows] = await sequelize.query<{ available_stock: number }>(
+    const [, metadata] = await sequelize.query(
       `UPDATE drops
          SET available_stock = available_stock - 1
        WHERE id = :dropId
-         AND available_stock > 0
-       RETURNING available_stock`,
+         AND available_stock > 0`,
       {
         replacements: { dropId },
-        type: QueryTypes.UPDATE,
+        type: QueryTypes.RAW,
         transaction: t,
       },
     );
 
-    // updatedRows is the count of affected rows from sequelize's raw UPDATE
-    if ((updatedRows as unknown as number) === 0) {
+    // metadata.rowCount (pg driver) tells us how many rows were updated
+    const rowsAffected = (metadata as unknown as { rowCount: number }).rowCount ?? 0;
+
+    if (rowsAffected === 0) {
       throw AppError.conflict(
         'Sorry, this drop is sold out.',
         'SOLD_OUT',
